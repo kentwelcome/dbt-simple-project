@@ -5,3 +5,8 @@ steam_games:
       type: duckdb
       path: steam_games.duckdb
       threads: 4
+    prod:
+      type: duckdb
+      path: steam_games.duckdb
+      schema: prod
+      threads: 4
