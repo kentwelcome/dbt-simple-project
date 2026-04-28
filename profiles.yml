@@ -1,0 +1,7 @@
+steam_games:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: steam_games.duckdb
+      threads: 4

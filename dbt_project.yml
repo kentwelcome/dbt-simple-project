@@ -1,0 +1,24 @@
+name: 'steam_games'
+version: '1.0.0'
+config-version: 2
+
+profile: 'steam_games'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  steam_games:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

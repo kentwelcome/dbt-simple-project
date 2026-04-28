@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: mart_games_by_genre
+    description: "Aggregate metrics per genre."
+    columns:
+      - name: genre
+        tests:
+          - not_null
+          - unique
+      - name: game_count
+        tests:
+          - not_null
+
+  - name: mart_top_games
+    description: "Games ranked by review ratio (min 100 reviews) and peak concurrent users."
+    columns:
+      - name: app_id
+        tests:
+          - not_null
+          - unique
+      - name: rank_by_rating
+        tests:
+          - not_null

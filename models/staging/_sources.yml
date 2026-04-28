@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: steam_games_raw
+        description: "Raw Steam top games dataset loaded from CSV"
