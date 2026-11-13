@@ -1,11 +1,56 @@
 # Preset Checks
 # Please see https://docs.reccehq.com/features/preset-checks/
 checks:
-- name: Row count diff
-  description: Check the row count diff for all table models.
+- name: mart_top_games row count
+  description: |
+    Change: mart_top_games now keeps only games with at least 500 reviews (was 100).
+    Expected: the row count drops by exactly the games that had 100-499 reviews.
+    Base (prod) has 1440 rows; dev should have 1377 rows (-63, -4.4%).
+    Investigate if the drop is larger than 63, or if the count goes up.
   type: row_count_diff
   params:
-    select: state:modified,config.materialized:table
-- name: Schema diff
-  description: Check the schema diff for all nodes.
-  type: schema_diff
+    node_names:
+    - mart_top_games
+- name: mart_top_games has no game under 500 reviews
+  description: |
+    Groups games by total reviews (positive + negative) into "100-499" and "500+".
+    Expected: the "100-499" group (63 games in prod, fewest reviews 111) is gone in dev.
+    The "500+" group must stay at 1377 games with a minimum of 500 reviews,
+    which shows the new filter removed nothing it should have kept.
+  type: query_diff
+  params:
+    sql_template: |
+      select
+        case when positive_reviews + negative_reviews < 500 then '100-499' else '500+' end as review_bucket,
+        count(*) as games,
+        min(positive_reviews + negative_reviews) as min_reviews
+      from {{ ref('mart_top_games') }}
+      group by 1
+      order by 1
+- name: mart_top_games only rank columns change
+  description: |
+    Compares each game by app_id between prod and dev.
+    Expected: 63 games removed, 0 added. For the 1377 kept games, every source
+    column (name, price_usd, reviews, peak_ccu, playtime, ...) matches 100%.
+    Only rank_by_rating and rank_by_peak_ccu change, because the removed games
+    no longer take rank slots (about 29% and 20% of kept rows still match).
+    Investigate if any non-rank column has a match rate below 100%.
+  type: value_diff
+  params:
+    model: mart_top_games
+    primary_key: app_id
+- name: mart_top_games top 10 by rating
+  description: |
+    Lists the 10 highest-rated games (rank_by_rating 1-10) in prod and dev.
+    Expected: no differences. None of these games were removed in dev, so
+    the higher threshold should not move them. A change here means the
+    filter is removing or reordering games it should not touch.
+  type: query_diff
+  params:
+    sql_template: |
+      select rank_by_rating, app_id, name
+      from {{ ref('mart_top_games') }}
+      where rank_by_rating <= 10
+      order by rank_by_rating
+    primary_keys:
+    - rank_by_rating
