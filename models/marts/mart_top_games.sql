@@ -19,7 +19,7 @@ scored as (
         recommendations,
         avg_playtime_forever
     from games
-    where (positive_reviews + negative_reviews) >= 100
+    where (positive_reviews + negative_reviews) >= 500
 )
 
 select
