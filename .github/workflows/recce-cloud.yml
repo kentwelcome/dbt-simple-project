@@ -1,0 +1,43 @@
+name: Recce Cloud
+
+on:
+  pull_request:
+    # edited: re-upload when the PR description changes (e.g. the dev session marker)
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  # Points the recce-cloud CLI at a non-default API, e.g. a local server behind ngrok.
+  RECCE_CLOUD_API_HOST: ${{ vars.RECCE_CLOUD_API_HOST }}
+  DBT_PROFILES_DIR: .
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install dbt and recce-cloud
+        run: pip install dbt-duckdb recce-cloud
+
+      - name: Build dbt artifacts
+        run: |
+          # main runs against prod; pull requests use the default dev target (see CLAUDE.md)
+          TARGET=${{ github.event_name == 'pull_request' && 'dev' || 'prod' }}
+          dbt build --target "$TARGET"
+          dbt docs generate --target "$TARGET"
+
+      - name: Upload to Recce Cloud
+        run: recce-cloud upload ${{ github.event_name == 'pull_request' && '' || '--type prod' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
