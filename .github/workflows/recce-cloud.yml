@@ -38,6 +38,7 @@ jobs:
           dbt docs generate --target "$TARGET"
 
       - name: Upload to Recce Cloud
-        run: recce-cloud upload ${{ github.event_name == 'pull_request' && '' || '--type prod' }}
+        # "cond && '' || x" always yields x because '' is falsy, so the non-empty value goes first.
+        run: recce-cloud upload ${{ github.event_name != 'pull_request' && '--type prod' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
